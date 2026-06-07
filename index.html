@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DebtFree">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>DebtFree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0eee8;
+    --muted: #7a7890;
+    --faint: #3a3850;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --accent-dim2: rgba(200,240,96,0.06);
+    --red: #ff4d6d;
+    --red-dim: rgba(255,77,109,0.12);
+    --amber: #ffb830;
+    --amber-dim: rgba(255,184,48,0.12);
+    --blue: #5b9cf6;
+    --blue-dim: rgba(91,156,246,0.12);
+    --safe: env(safe-area-inset-bottom, 0px);
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 52px 20px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .app-name {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .total-display {
+    text-align: right;
+  }
+
+  .total-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .total-amount {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  /* ── Tab bar ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 20px;
+    margin-top: 14px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 7px 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Main scroll area ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    padding-bottom: calc(20px + var(--safe));
+  }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Metric strip ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .metric.span2 { grid-column: 1 / -1; }
+
+  .metric-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .metric-value.good { color: var(--accent); }
+  .metric-value.warn { color: var(--amber); }
+  .metric-value.bad  { color: var(--red); }
+
+  /* ── Debt cards ── */
+  .debt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .debt-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 14px 0 0 14px;
+  }
+
+  .debt-card.priority::before { background: var(--red); }
+  .debt-card.secondary::before { background: var(--amber); }
+  .debt-card.done::before { background: var(--accent); }
+
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .card-name {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .apr-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+  }
+
+  .apr-badge.high { background: var(--red-dim); color: var(--red); }
+  .apr-badge.mid  { background: var(--amber-dim); color: var(--amber); }
+  .apr-badge.low  { background: var(--blue-dim); color: var(--blue); }
+
+  .card-balance {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+
+  .progress-bg {
+    height: 4px;
+    background: var(--faint);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card-footer {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Strategy panel ── */
+  .strategy-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .strat-btn {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+  }
+
+  .strat-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-dim2);
+    color: var(--accent);
+  }
+
+  .strat-btn .strat-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    display: block;
+  }
+
+  .strat-btn .strat-sub {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .strat-btn.active .strat-sub { color: rgba(200,240,96,0.6); }
+
+  .extra-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .extra-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .extra-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    padding: 8px 10px;
+    text-align: right;
+    -webkit-appearance: none;
+  }
+
+  .extra-input:focus { outline: none; border-color: var(--accent); }
+
+  .insight-card {
+    background: var(--accent-dim2);
+    border: 1px solid rgba(200,240,96,0.15);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .insight-card strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .order-list { margin-bottom: 20px; }
+
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .order-item:last-child { border-bottom: none; }
+
+  .order-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .order-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .order-info { flex: 1; }
+  .order-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; }
+  .order-detail { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .order-time {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* ── Chart ── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .chart-canvas-wrap { position: relative; width: 100%; height: 200px; }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  /* ── Debts edit panel ── */
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+
+  .edit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .edit-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .edit-card-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .del-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--red);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .del-btn:hover, .del-btn:active { background: var(--red-dim); }
+
+  .edit-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .field-group label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    padding: 9px 10px;
+    -webkit-appearance: none;
+  }
+
+  .field-input:focus { outline: none; border-color: var(--accent); }
+
+  .add-form {
+    background: var(--surface);
+    border: 1px dashed var(--border2);
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+
+  .add-form-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--muted);
+  }
+
+  .add-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .add-fields .field-group.full { grid-column: 1 / -1; }
+
+  .add-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #0a0a0f;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity 0.2s;
+  }
+
+  .add-btn:active { opacity: 0.8; }
+
+  /* ── Comparison saving banner ── */
+  .save-banner {
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,240,96,0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .save-banner-label { font-size: 11px; color: var(--muted); }
+  .save-banner-val { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-text { font-size: 13px; line-height: 1.6; }
+
+  /* ── Scrollbar ── */
+  .main::-webkit-scrollbar { width: 3px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
+
+  /* ── Animations ── */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel.active > * { animation: slideUp 0.25s ease both; }
+  .panel.active > *:nth-child(2) { animation-delay: 0.04s; }
+  .panel.active > *:nth-child(3) { animation-delay: 0.08s; }
+  .panel.active > *:nth-child(4) { animation-delay: 0.12s; }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-name">DebtFree</div>
+    </div>
+    <div class="total-display">
+      <div class="total-label">Total debt</div>
+      <div class="total-amount" id="hdr-total">£0</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab('strategy')">Strategy</button>
+    <button class="tab-btn" onclick="switchTab('debts')">Debts</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="metrics" id="metrics"></div>
+    <div class="section-title">Your debts</div>
+    <div id="debt-cards"></div>
+  </div>
+
+  <!-- STRATEGY -->
+  <div class="panel" id="panel-strategy">
+    <div class="strategy-toggle">
+      <button class="strat-btn active" id="btn-avalanche" onclick="setStrategy('avalanche')">
+        <span class="strat-title">Avalanche</span>
+        <span class="strat-sub">Highest APR first. Mathematically optimal — saves most interest.</span>
+      </button>
+      <button class="strat-btn" id="btn-snowball" onclick="setStrategy('snowball')">
+        <span class="strat-title">Snowball</span>
+        <span class="strat-sub">Smallest balance first. Fastest wins, more motivation.</span>
+      </button>
+    </div>
+
+    <div class="extra-row">
+      <span class="extra-label">Extra / mo</span>
+      <span style="font-size:13px;color:var(--muted);">£</span>
+      <input class="extra-input" type="number" id="extra" value="0" min="0" step="10" inputmode="decimal" oninput="renderAll()">
+    </div>
+
+    <div class="insight-card" id="insight"></div>
+
+    <div id="save-banners"></div>
+
+    <div class="section-title">Payoff order</div>
+    <div class="order-list" id="order-list"></div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">Balance over time</div>
+      <div class="chart-canvas-wrap">
+        <canvas id="chart" role="img" aria-label="Debt balance reduction over time by month"></canvas>
+      </div>
+      <div class="chart-legend" id="chart-legend"></div>
+    </div>
+  </div>
+
+  <!-- DEBTS -->
+  <div class="panel" id="panel-debts">
+    <div class="section-title">Edit debts</div>
+    <div id="edit-list"></div>
+    <div class="add-form">
+      <div class="add-form-title">+ Add debt</div>
+      <div class="add-fields">
+        <div class="field-group full">
+          <label>Name</label>
+          <input class="field-input" type="text" id="new-name" placeholder="e.g. Barclaycard">
+        </div>
+        <div class="field-group">
+          <label>Balance (£)</label>
+          <input class="field-input" type="number" id="new-bal" placeholder="500" inputmode="decimal">
+        </div>
+        <div class="field-group">
+          <label>APR (%)</label>
+          <input class="field-input" type="number" id="new-apr" placeholder="29.9" inputmode="decimal">
+        </div>
+        <div class="field-group">
+          <label>Min payment (£)</label>
+          <input class="field-input" type="number" id="new-min" placeholder="25" inputmode="decimal">
+        </div>
+      </div>
+      <button class="add-btn" onclick="addDebt()">Add debt</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────
+const STORAGE_KEY = 'debtfree_v1';
+const COLORS = ['#ff4d6d','#5b9cf6','#c8f060','#ffb830','#b57bee','#5de0c8'];
+
+let state = {
+  debts: [
+    { id: 1, name: 'Zable', balance: 0, apr: 39.9, min: 25 },
+    { id: 2, name: 'Aqua',  balance: 0, apr: 34.9, min: 25 },
+  ],
+  strategy: 'avalanche',
+  extra: 0,
+  nextId: 3,
+};
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) state = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ── Utils ──────────────────────────────────────────────
+function fmt(n)    { return '£' + Math.round(n).toLocaleString('en-GB'); }
+function fmtDec(n) { return '£' + parseFloat(n).toFixed(2); }
+
+function months2str(m) {
+  if (m <= 0 || !isFinite(m)) return 'Paid off';
+  const y = Math.floor(m/12), mo = m%12;
+  if (y === 0) return mo + 'mo';
+  if (mo === 0) return y + 'yr';
+  return y + 'yr ' + mo + 'mo';
+}
+
+function aprClass(apr) {
+  if (apr >= 35) return 'high';
+  if (apr >= 20) return 'mid';
+  return 'low';
+}
+
+function colorForDebt(id) {
+  const idx = state.debts.findIndex(d => d.id === id);
+  return COLORS[idx % COLORS.length];
+}
+
+// ── Simulation ─────────────────────────────────────────
+function simulate(strategy, extraAmt) {
+  const active = state.debts.filter(d => d.balance > 0.01);
+  if (active.length === 0) return { months: 0, interest: 0, history: [] };
+
+  const sorted = strategy === 'avalanche'
+    ? [...active].sort((a,b) => b.apr - a.apr)
+    : [...active].sort((a,b) => a.balance - b.balance);
+
+  let bals = {};
+  active.forEach(d => bals[d.id] = d.balance);
+  const history = [{ ...bals }];
+  let totalInt = 0, months = 0;
+
+  while (Object.values(bals).some(b => b > 0.01) && months < 600) {
+    months++;
+    sorted.forEach(d => {
+      if (bals[d.id] <= 0.01) return;
+      const ic = bals[d.id] * (d.apr / 100 / 12);
+      totalInt += ic;
+      bals[d.id] += ic;
+    });
+    sorted.forEach(d => {
+      if (bals[d.id] <= 0.01) return;
+      bals[d.id] = Math.max(0, bals[d.id] - d.min);
+    });
+    let extra = extraAmt;
+    for (const d of sorted) {
+      if (extra <= 0) break;
+      if (bals[d.id] <= 0.01) continue;
+      const pay = Math.min(extra, bals[d.id]);
+      bals[d.id] -= pay;
+      extra -= pay;
+    }
+    sorted.forEach(d => { if (bals[d.id] < 0.01) bals[d.id] = 0; });
+    history.push({ ...bals });
+  }
+  return { months, interest: Math.round(totalInt), history };
+}
+
+function payoffMonthsForDebt(debt, extra) {
+  let bal = debt.balance, m = 0;
+  const rate = debt.apr / 100 / 12;
+  while (bal > 0.01 && m < 600) {
+    bal += bal * rate;
+    bal = Math.max(0, bal - debt.min - extra);
+    m++;
+  }
+  return m;
+}
+
+// ── Render ─────────────────────────────────────────────
+let chartInst = null;
+
+function renderAll() {
+  state.extra = parseFloat(document.getElementById('extra')?.value || 0) || 0;
+  save();
+  renderHeader();
+  renderMetrics();
+  renderDebtCards();
+  renderStrategy();
+  renderEditList();
+}
+
+function renderHeader() {
+  const total = state.debts.reduce((s,d) => s + d.balance, 0);
+  document.getElementById('hdr-total').textContent = fmt(total);
+}
+
+function renderMetrics() {
+  const total = state.debts.reduce((s,d) => s + d.balance, 0);
+  const minTotal = state.debts.reduce((s,d) => s + d.min, 0);
+  const avgApr = total > 0 ? state.debts.reduce((s,d) => s + d.apr * d.balance, 0) / total : 0;
+  const sim = simulate(state.strategy, state.extra);
+
+  const aprCls = avgApr >= 35 ? 'bad' : avgApr >= 25 ? 'warn' : 'good';
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Min / month</div>
+      <div class="metric-value">${fmt(minTotal)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Avg APR</div>
+      <div class="metric-value ${aprCls}">${avgApr.toFixed(1)}%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Payoff time</div>
+      <div class="metric-value" style="font-size:18px;">${months2str(sim.months)}</div>
+      <div class="metric-sub">with current plan</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Total interest</div>
+      <div class="metric-value warn" style="font-size:18px;">${fmt(sim.interest)}</div>
+      <div class="metric-sub">at current pace</div>
+    </div>
+  `;
+}
+
+function renderDebtCards() {
+  const el = document.getElementById('debt-cards');
+  if (state.debts.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No debts added yet.<br>Head to the Debts tab to add yours.</div></div>`;
+    return;
+  }
+  const total = state.debts.reduce((s,d) => s + d.balance, 0) || 1;
+  const sorted = state.strategy === 'avalanche'
+    ? [...state.debts].sort((a,b) => b.apr - a.apr)
+    : [...state.debts].sort((a,b) => a.balance - b.balance);
+
+  el.innerHTML = sorted.map((d, i) => {
+    const pct = Math.round((d.balance / total) * 100);
+    const cls = i === 0 ? 'priority' : i === 1 ? 'secondary' : '';
+    const color = colorForDebt(d.id);
+    return `<div class="debt-card ${cls}">
+      <div class="card-row">
+        <span class="card-name">${d.name}</span>
+        <span class="apr-badge ${aprClass(d.apr)}">${d.apr}% APR</span>
+      </div>
+      <div class="card-balance">${fmt(d.balance)}</div>
+      <div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>
+      <div class="card-footer">
+        <span>Min: ${fmt(d.min)}/mo</span>
+        <span>${pct}% of total</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStrategy() {
+  const extra = state.extra;
+  const sim = simulate(state.strategy, extra);
+  const simNoExtra = simulate(state.strategy, 0);
+  const simAval = simulate('avalanche', extra);
+  const simSnow = simulate('snowball', extra);
+
+  const savedByExtra = simNoExtra.interest - sim.interest;
+  const savedMonths = simNoExtra.months - sim.months;
+
+  const stratLabel = state.strategy === 'avalanche' ? 'Avalanche' : 'Snowball';
+  let insightHtml = `<strong>${stratLabel}</strong> strategy`;
+  insightHtml += ` — payoff in <strong>${months2str(sim.months)}</strong>, ~<strong>${fmt(sim.interest)}</strong> total interest.`;
+  if (extra > 0) {
+    insightHtml += ` Extra £${extra}/mo saves <strong>${fmt(savedByExtra)}</strong> in interest and cuts <strong>${months2str(savedMonths)}</strong> off your timeline.`;
+  }
+  document.getElementById('insight').innerHTML = insightHtml;
+
+  // Save banners
+  const aValBetter = simAval.interest < simSnow.interest;
+  const diff = Math.abs(simAval.interest - simSnow.interest);
+  const mDiff = Math.abs(simAval.months - simSnow.months);
+  document.getElementById('save-banners').innerHTML = diff > 50 ? `
+    <div class="save-banner">
+      <div>
+        <div class="save-banner-label">Avalanche saves vs Snowball</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${months2str(mDiff)} faster too</div>
+      </div>
+      <div class="save-banner-val">${fmt(diff)}</div>
+    </div>` : '';
+
+  const order = state.strategy === 'avalanche'
+    ? [...state.debts].filter(d=>d.balance>0).sort((a,b) => b.apr - a.apr)
+    : [...state.debts].filter(d=>d.balance>0).sort((a,b) => a.balance - b.balance);
+
+  document.getElementById('order-list').innerHTML = order.map((d, i) => {
+    const m = payoffMonthsForDebt(d, i === 0 ? extra : 0);
+    const color = colorForDebt(d.id);
+    return `<div class="order-item">
+      <div class="order-num">${i+1}</div>
+      <div class="order-dot" style="background:${color}"></div>
+      <div class="order-info">
+        <div class="order-name">${d.name}</div>
+        <div class="order-detail">${fmt(d.balance)} · ${d.apr}% APR</div>
+      </div>
+      <div class="order-time">${months2str(m)}</div>
+    </div>`;
+  }).join('');
+
+  renderChart(sim.history, order);
+}
+
+function renderChart(history, order) {
+  const ctx = document.getElementById('chart');
+  if (!ctx) return;
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+
+  const step = Math.max(1, Math.floor(history.length / 18));
+  const filtered = history.filter((_,i) => i % step === 0 || i === history.length - 1);
+  const labels = filtered.map((_,i) => {
+    const m = i * step;
+    if (m === 0) return 'Now';
+    if (m % 12 === 0) return `${m/12}yr`;
+    if (i % 3 === 0) return `${m}mo`;
+    return '';
+  });
+
+  const datasets = order.map(d => ({
+    label: d.name,
+    data: filtered.map(h => Math.round(h[d.id] || 0)),
+    borderColor: colorForDebt(d.id),
+    backgroundColor: 'transparent',
+    pointRadius: 0,
+    borderWidth: 2,
+    tension: 0.3,
+  }));
+
+  chartInst = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a26',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#7a7890',
+          bodyColor: '#f0eee8',
+          callbacks: { label: c => c.dataset.label + ': £' + c.parsed.y.toLocaleString() }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#7a7890', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        },
+        y: {
+          ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#7a7890', callback: v => '£' + Math.round(v).toLocaleString() },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        }
+      }
+    }
+  });
+
+  document.getElementById('chart-legend').innerHTML = order.map(d =>
+    `<span class="legend-item"><span class="legend-dot" style="background:${colorForDebt(d.id)}"></span>${d.name}</span>`
+  ).join('');
+}
+
+function renderEditList() {
+  document.getElementById('edit-list').innerHTML = state.debts.map(d => `
+    <div class="edit-card">
+      <div class="edit-card-header">
+        <span class="edit-card-name">${d.name}</span>
+        <button class="del-btn" onclick="removeDebt(${d.id})" aria-label="Delete ${d.name}">×</button>
+      </div>
+      <div class="edit-fields">
+        <div class="field-group">
+          <label>Balance (£)</label>
+          <input class="field-input" type="number" value="${d.balance}" inputmode="decimal"
+            onchange="updateDebt(${d.id},'balance',this.value)">
+        </div>
+        <div class="field-group">
+          <label>APR (%)</label>
+          <input class="field-input" type="number" value="${d.apr}" inputmode="decimal"
+            onchange="updateDebt(${d.id},'apr',this.value)">
+        </div>
+        <div class="field-group">
+          <label>Min payment (£)</label>
+          <input class="field-input" type="number" value="${d.min}" inputmode="decimal"
+            onchange="updateDebt(${d.id},'min',this.value)">
+        </div>
+        <div class="field-group">
+          <label>Name</label>
+          <input class="field-input" type="text" value="${d.name}"
+            onchange="updateDebt(${d.id},'name',this.value)">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Actions ────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  if (name === 'strategy') renderStrategy();
+}
+
+function setStrategy(s) {
+  state.strategy = s;
+  document.getElementById('btn-avalanche').classList.toggle('active', s === 'avalanche');
+  document.getElementById('btn-snowball').classList.toggle('active', s === 'snowball');
+  save();
+  renderAll();
+}
+
+function updateDebt(id, field, val) {
+  const d = state.debts.find(x => x.id === id);
+  if (!d) return;
+  d[field] = field === 'name' ? val : parseFloat(val) || 0;
+  save();
+  renderAll();
+}
+
+function removeDebt(id) {
+  state.debts = state.debts.filter(x => x.id !== id);
+  save();
+  renderAll();
+}
+
+function addDebt() {
+  const name = document.getElementById('new-name').value.trim();
+  const bal  = parseFloat(document.getElementById('new-bal').value) || 0;
+  const apr  = parseFloat(document.getElementById('new-apr').value) || 0;
+  const min  = parseFloat(document.getElementById('new-min').value) || 0;
+  if (!name) { document.getElementById('new-name').focus(); return; }
+  state.debts.push({ id: state.nextId++, name, balance: bal, apr, min });
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-bal').value  = '';
+  document.getElementById('new-apr').value  = '';
+  document.getElementById('new-min').value  = '';
+  save();
+  renderAll();
+}
+
+// ── Service Worker ─────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+
+// ── Boot ───────────────────────────────────────────────
+load();
+if (document.getElementById('extra')) {
+  document.getElementById('extra').value = state.extra || 0;
+}
+document.getElementById('btn-avalanche')?.classList.toggle('active', state.strategy === 'avalanche');
+document.getElementById('btn-snowball')?.classList.toggle('active', state.strategy === 'snowball');
+renderAll();
+</script>
+</body>
+</html>
